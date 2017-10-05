@@ -1,3 +1,5 @@
+import os
+
 from flask import Flask
 from flask_restful import Api
 from flask_jwt import JWT
@@ -11,20 +13,11 @@ from resources.store import Store, StoreList
 # setup
 app = Flask(__name__)
 
-# tell sqlalchemy the location of the database
-app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///data.db" 
-
-# this turns off the flask sqlalchemy track not the real sqlalchemy one
-app.config['SQLIALCHEMY_TRACK_MODIFICATIONS'] = False 
-
+app.config['DEBUG'] = True
+app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL', 'sqlite:///data.db')
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.secret_key = "jose"
 api = Api(app)
-
-
-# create db before all request is run
-@app.before_first_request
-def create_tables():
-	db.create_all()
 
 
 jwt = JWT(app, authenticate, identity)
@@ -50,6 +43,11 @@ if __name__ == "__main__":
 	# avoid circular import
 	from db import db
 	db.init_app(app)
+
+	if app.config["DEBUG"]:
+		@app.before_first_request
+		def create_tables():
+			db.create_all()
 
 	app.run(port=5000, debug=True)
 
